@@ -43,6 +43,7 @@ import java.util.Locale;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.GZIPInputStream;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletResponse;
 import jenkins.model.Jenkins;
@@ -316,6 +317,15 @@ public final class DirectoryBrowserSupport implements HttpResponse {
 
         InputStream in = baseFile.open();
         if (view) {
+            try {
+                byte[] sig = new byte[2];
+                int len = in.read(sig, 0, 2);
+                in.close();
+                in = baseFile.open();
+                if (len == 2 && (int)((sig[0] & 0xff) | ((sig[1] << 8) & 0xff00)) == GZIPInputStream.GZIP_MAGIC) {
+                    in = new GZIPInputStream(in);
+                }
+            }
             // for binary files, provide the file name for download
             rsp.setHeader("Content-Disposition", "inline; filename=" + baseFile.getName());
 
